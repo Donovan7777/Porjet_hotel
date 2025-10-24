@@ -6,11 +6,13 @@
 # et l’API FastAPI, pour contrôler et valider les données.
 # ==============================================================
 
+
 from typing import Optional
 from pydantic import BaseModel, Field
 from uuid import UUID
 from modele.chambre import Chambre
 from modele.type_chambre import TypeChambre
+
 
 # --------------------------------------------------------------
 # ---------- OUTPUT DTOs (envoyés par l’API) ----------
@@ -23,6 +25,7 @@ class TypeChambreDTO(BaseModel):
     prix_plancher: float
     description_chambre: Optional[str] = None
 
+
     # Le constructeur reçoit un objet TypeChambre du modèle
     # et extrait seulement les champs utiles à exposer à l’API.
     def __init__(self, typeChambre: TypeChambre):
@@ -34,12 +37,15 @@ class TypeChambreDTO(BaseModel):
         )
 
 
+
+
 class ChambreDTO(BaseModel):
     idChambre: UUID
     numero_chambre: int
     disponible_reservation: bool
     autre_informations: Optional[str] = None
     type_chambre: TypeChambreDTO
+
 
     # Ce DTO retourne les infos complètes d’une chambre,
     # incluant son type (imbriqué à l’intérieur du DTO).
@@ -51,6 +57,7 @@ class ChambreDTO(BaseModel):
             autre_informations=chambre.autre_informations,
             type_chambre=TypeChambreDTO(chambre.type_chambre),
         )
+
 
 # --------------------------------------------------------------
 # ---------- INPUT DTOs (reçus par l’API) ----------
@@ -66,12 +73,16 @@ class TypeChambreCreateDTO(BaseModel):
     description_chambre: Optional[str] = Field(default=None, max_length=200)
 
 
+
+
 class TypeChambreUpdateDTO(BaseModel):
     # Champs optionnels pour la mise à jour d’un type de chambre
     nom_type: Optional[str] = Field(default=None, min_length=1, max_length=50)
     prix_plancher: Optional[float] = None
     prix_plafond: Optional[str] = Field(default=None, max_length=10)
     description_chambre: Optional[str] = Field(default=None, max_length=200)
+
+
 
 
 class ChambreCreateDTO(BaseModel):
@@ -83,6 +94,8 @@ class ChambreCreateDTO(BaseModel):
     nom_type: str = Field(min_length=1, max_length=50)
 
 
+
+
 class ChambreUpdateDTO(BaseModel):
     # Champs optionnels pour la mise à jour d’une chambre existante
     numero_chambre: Optional[int] = None
@@ -90,3 +103,13 @@ class ChambreUpdateDTO(BaseModel):
     autre_informations: Optional[str] = None
     # Permet de changer le type en fournissant un nouveau nom
     nom_type: Optional[str] = Field(default=None, min_length=1, max_length=50)
+
+
+
+# --------------------------------------------------------------
+# ---------- INPUT (recherche de types de chambre) ----------
+# Sert à filtrer les types de chambres selon différents critères.
+# --------------------------------------------------------------
+class TypeChambreSearchDTO(BaseModel):
+    idTypeChambre: Optional[str] = Field(default=None, min_length=36, max_length=36)
+    nom_type: Optional[str] = Field(default=None, max_length=50)

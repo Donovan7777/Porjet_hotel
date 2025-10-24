@@ -5,15 +5,19 @@
 # suppression des comptes usagers dans la base de données.
 # ==============================================================
 
+
 from __future__ import annotations
+
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from uuid import UUID
 
+
 from core.db import SessionLocal
 from modele.usager import Usager
-from DTO.usagerDTO import UsagerDTO, UsagerCreateDTO, UsagerUpdateDTO
+from DTO.usagerDTO import UsagerDTO, UsagerCreateDTO, UsagerUpdateDTO, UsagerSearchDTO
+
 
 # --------------------------------------------------------------
 # ---------- CRÉATION ----------
@@ -33,9 +37,11 @@ def creerUsager(data: UsagerCreateDTO) -> UsagerDTO:
             )
         ).scalar_one_or_none()
 
+
         # Si un usager avec le même nom/prénom/mobile existe déjà, on le retourne
         if existing:
             return UsagerDTO(existing)
+
 
         # Sinon on crée un nouvel usager à partir du DTO
         u = Usager(
@@ -52,6 +58,7 @@ def creerUsager(data: UsagerCreateDTO) -> UsagerDTO:
         s.refresh(u)
         return UsagerDTO(u)
 
+
 # --------------------------------------------------------------
 # ---------- LECTURE ----------
 # Retourne un usager selon son identifiant unique (UUID)
@@ -61,6 +68,29 @@ def getUsagerParId(id_usager: str | UUID) -> UsagerDTO | None:
         u = s.get(Usager, str(id_usager))
         # Si trouvé, on le retourne en DTO, sinon None
         return UsagerDTO(u) if u else None
+
+
+# --------------------------------------------------------------
+# ---------- RECHERCHE ----------
+# Permet de filtrer les usagers selon différents critères.
+# --------------------------------------------------------------
+def rechercherUsager(critere: UsagerSearchDTO) -> list[UsagerDTO]:
+    with SessionLocal() as s:
+        stmt = select(Usager)
+        if critere.idUsager:
+            stmt = stmt.where(Usager.id_usager == critere.idUsager)
+        if critere.nom:
+            stmt = stmt.where(Usager.nom == critere.nom)
+        if critere.prenom:
+            stmt = stmt.where(Usager.prenom == critere.prenom)
+        if critere.mobile:
+            stmt = stmt.where(Usager.mobile == critere.mobile)
+        if critere.type_usager:
+            stmt = stmt.where(Usager.type_usager == critere.type_usager)
+
+        rows = s.execute(stmt).scalars().all()
+        return [UsagerDTO(u) for u in rows]
+
 
 # --------------------------------------------------------------
 # ---------- MISE À JOUR ----------
@@ -74,9 +104,11 @@ def modifierUsager(id_usager: str, data: UsagerUpdateDTO) -> UsagerDTO:
     with SessionLocal() as s:
         s: Session
 
+
         u = s.get(Usager, id_usager)
         if not u:
             raise ValueError("Usager introuvable.")
+
 
         # Mise à jour seulement des champs fournis dans le DTO
         if data.prenom is not None:
@@ -93,9 +125,11 @@ def modifierUsager(id_usager: str, data: UsagerUpdateDTO) -> UsagerDTO:
         if data.type_usager is not None:
             u.type_usager = data.type_usager
 
+
         s.commit()
         s.refresh(u)
         return UsagerDTO(u)
+
 
 # --------------------------------------------------------------
 # ---------- SUPPRESSION ----------

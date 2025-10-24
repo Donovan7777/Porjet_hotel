@@ -1,16 +1,20 @@
 """
 Application principale FastAPI pour gérer les chambres et les réservations d'hôtel.
 
+
 Pour lancer le serveur :
     uvicorn main:app --reload
+
 
 Docs :
     http://127.0.0.1:8000/docs
 """
 
+
 # Importation des modules principaux de FastAPI
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+
 
 # ------------------------------------------------------------
 # Importation des DTOs (objets de transfert de données)
@@ -24,6 +28,7 @@ from DTO.chambreDTO import (
     TypeChambreUpdateDTO,
     ChambreCreateDTO,
     ChambreUpdateDTO,
+    TypeChambreSearchDTO,
 )
 from DTO.reservationDTO import (
     CriteresRechercheDTO,
@@ -34,7 +39,9 @@ from DTO.usagerDTO import (
     UsagerDTO,
     UsagerCreateDTO,
     UsagerUpdateDTO,
+    UsagerSearchDTO,
 )
+
 
 # ------------------------------------------------------------
 # Importation de la logique métier (fonctions principales)
@@ -50,6 +57,7 @@ from metier.chambreMetier import (
     supprimerChambre,
     modifierTypeChambre,
     supprimerTypeChambre,
+    rechercherTypeChambre,
 )
 from metier.reservationMetier import (
     rechercherReservation,
@@ -62,7 +70,9 @@ from metier.usagerMetier import (
     modifierUsager,
     supprimerUsager,
     getUsagerParId,
+    rechercherUsager,
 )
+
 
 # ------------------------------------------------------------
 # Initialisation de l’application FastAPI
@@ -73,6 +83,7 @@ app = FastAPI(
     description="API permettant de gérer les chambres, les usagers et les réservations d'un hôtel.",
     version="1.0.0",
 )
+
 
 # ------------------------------------------------------------
 # Configuration du middleware CORS
@@ -87,6 +98,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # ------------------------------------------------------------
 # Routes utilitaires (diagnostic de base)
 # ------------------------------------------------------------
@@ -96,10 +108,13 @@ def root():
     return {"status": "ok", "docs": "/docs"}
 
 
+
+
 @app.get("/health", summary="Vérification de santé")
 def health():
     # Autre route de santé (souvent utilisée pour le monitoring)
     return {"status": "ok"}
+
 
 # ------------------------------------------------------------
 # Routes API - Gestion des chambres
@@ -119,6 +134,8 @@ def api_get_chambre(no_chambre: int):
     return chambre
 
 
+
+
 @app.get(
     "/chambres",
     response_model=list[ChambreDTO],
@@ -128,6 +145,8 @@ def api_get_chambre(no_chambre: int):
 def api_lister_chambres():
     # Retourne toutes les chambres disponibles dans la BD
     return listerChambres()
+
+
 
 
 @app.post(
@@ -145,6 +164,8 @@ def api_creer_chambre(chambre: ChambreCreateDTO):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+
+
 @app.put(
     "/chambres/{id_chambre}",
     response_model=ChambreDTO,
@@ -157,6 +178,8 @@ def api_modifier_chambre(id_chambre: str, body: ChambreUpdateDTO):
         return modifierChambre(id_chambre, body)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
 
 
 @app.delete(
@@ -175,6 +198,7 @@ def api_supprimer_chambre(id_chambre: str):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 # ------------------------------------------------------------
 # Routes API - Types de chambre
 # ------------------------------------------------------------
@@ -189,6 +213,8 @@ def api_lister_types_chambre():
     return listerTypesChambre()
 
 
+
+
 @app.post(
     "/creerTypeChambre",
     response_model=TypeChambreDTO,
@@ -198,6 +224,8 @@ def api_lister_types_chambre():
 def api_creer_type_chambre(type_chambre: TypeChambreCreateDTO):
     # Création d’un type de chambre
     return creerTypeChambre(type_chambre)
+
+
 
 
 @app.put(
@@ -212,6 +240,8 @@ def api_modifier_type_chambre(id_type_chambre: str, body: TypeChambreUpdateDTO):
         return modifierTypeChambre(id_type_chambre, body)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
 
 
 @app.delete(
@@ -230,6 +260,18 @@ def api_supprimer_type_chambre(id_type_chambre: str):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+@app.post(
+    "/rechercherTypeChambre",
+    response_model=list[TypeChambreDTO],
+    summary="Rechercher des types de chambre",
+    description="Recherche des types de chambre selon différents critères (id, nom)."
+)
+def api_rechercher_type_chambre(body: TypeChambreSearchDTO):
+    # Permet de faire une recherche filtrée sur les types de chambre
+    return rechercherTypeChambre(body)
+
+
 # ------------------------------------------------------------
 # Routes API - Réservations
 # ------------------------------------------------------------
@@ -245,6 +287,8 @@ def api_rechercher_reservation(critere: CriteresRechercheDTO):
         return rechercherReservation(critere)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
 
 
 @app.post(
@@ -264,6 +308,8 @@ def api_creer_reservation(body: ReservationDTO):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+
+
 @app.put(
     "/reservations/{id_reservation}",
     response_model=ReservationDTO,
@@ -278,6 +324,8 @@ def api_modifier_reservation(id_reservation: str, body: ReservationUpdateDTO):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+
+
 @app.delete(
     "/reservations/{id_reservation}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -290,6 +338,7 @@ def api_supprimer_reservation(id_reservation: str):
     if not ok:
         raise HTTPException(status_code=404, detail="Réservation introuvable.")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 
 # ------------------------------------------------------------
 # Routes API - Usagers
@@ -308,6 +357,8 @@ def api_creer_usager(body: UsagerCreateDTO):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+
+
 @app.get(
     "/usagers/{id_usager}",
     response_model=UsagerDTO,
@@ -320,6 +371,8 @@ def api_get_usager(id_usager: str):
     if not u:
         raise HTTPException(status_code=404, detail="Usager introuvable.")
     return u
+
+
 
 
 @app.put(
@@ -336,6 +389,8 @@ def api_modifier_usager(id_usager: str, body: UsagerUpdateDTO):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+
+
 @app.delete(
     "/usagers/{id_usager}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -348,6 +403,18 @@ def api_supprimer_usager(id_usager: str):
     if not ok:
         raise HTTPException(status_code=404, detail="Usager introuvable.")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.post(
+    "/rechercherUsager",
+    response_model=list[UsagerDTO],
+    summary="Rechercher des usagers",
+    description="Recherche des usagers selon différents critères (id, nom, prénom, mobile, type)."
+)
+def api_rechercher_usager(body: UsagerSearchDTO):
+    # Permet de faire une recherche filtrée sur les usagers
+    return rechercherUsager(body)
+
 
 # ------------------------------------------------------------
 # Point d’entrée du serveur (exécution locale)
